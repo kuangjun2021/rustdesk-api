@@ -1,0 +1,33 @@
+name: Build hardened rustdesk-api
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Upgrade vulnerable dependencies
+        run: |
+          go get github.com/gin-gonic/gin@v1.9.1
+          go get github.com/golang-jwt/jwt/v5@v5.2.2
+          go get golang.org/x/net@v0.36.0
+          go mod tidy
+
+      - name: Build
+        run: |
+          CGO_ENABLED=1 go build -o release/apimain cmd/apimain.go
+          cp -ar resources release/
+          cp -ar conf release/
+          mkdir -p release/data release/runtime
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rustdesk-api-linux-amd64
+          path: release/
